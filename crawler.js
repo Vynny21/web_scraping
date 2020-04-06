@@ -1,4 +1,3 @@
-//Simula um navegador mandando uma assinatura
 const puppeteer = require('puppeteer'); 
 const jsdom = require("jsdom");
 const { document } = jsdom;
