@@ -4,7 +4,6 @@ const scp = require('./crawler');
 
     await scp.initialiaze();
     await scp.search_func();
-    //await scp.handle_button();
-    await scp.map_cards(['']);
+    await scp.map_cards();
 
 })();

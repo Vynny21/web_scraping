@@ -41,9 +41,7 @@ const scraping = {
         //Seleciona e clica no botão
         try{
 
-            console.log("Entrou no botão!!!")
-            await scraping.page.waitForNavigation();
-            await scraping.page.click('a.btn.btn-outline-secondary.float-right.d-flex.justify-content-between.align-items-center');
+            console.log("Entrou no scraping!!!")
 
             const titles = []
             const dates = []
@@ -53,6 +51,8 @@ const scraping = {
             const ementas = []
 
             const scraping_data = await scraping.page.evaluate(() => {
+                console.log("Scraping de dados!!!")
+                //const title = await scraping.$eval('h5[class="card-title"]');
 
                 document.querySelectorAll('h5[class="card-title"]')
                     .forEach(title => titles.push(title.getAttribute('h5')));
@@ -72,13 +72,33 @@ const scraping = {
                 document.querySelectorAll('body > section > div > div:nth-child(2) > div > div.col-lg > dl > dd:nthbody > section > div > div:nth-child(5) > p-child(2)')
                     .forEach(ementa => ementas.push(ementa.getAttribute('dd')));
 
+                //Captura os tramites dentro de um modal expandido pelo botão "Trâmite"
+                scraping.page.click('span.btn.btn-outline-secondary.btn-block.d-flex.justify-content-between.align-items-start');
+
+                //Scraping da sessão Trâmites
+                const entradas_tramites = []
+                const prazos_tramites = []
+                const devolucoes_tramites = []
+
+                document.querySelectorAll('.table > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(2)')
+                    .forEach(entrada_tramite => entradas_tramites.push(entrada_tramite.getAttribute('td')));
+                
+                document.querySelectorAll('.table > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(3)')
+                    .forEach(prazo_tramite => prazos_tramites.push(prazo_tramite.getAttribute('td')));
+
+                document.querySelectorAll('.table > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(4)')
+                    .forEach(devolucao_tramite => devolucoes_tramites.push(devolucao_tramite.getAttribute('td')));
+
                 return (
-                    titles,
-                    dates,
-                    situacoes,
-                    assuntos,
-                    autores,
-                    ementas
+                    console.log(titles),
+                    console.log(dates),
+                    console.log(situacoes),
+                    console.log(assuntos),
+                    console.log(autores),
+                    console.log(ementas),
+                    console.log(entradas_tramites),
+                    console.log(prazos_tramites),
+                    console.log(devolucoes_tramites)
                 )
             })
 
@@ -89,35 +109,36 @@ const scraping = {
         }
     },
 
-    map_cards: async (cards = []) => {
+    map_cards: async () => {
         try{
-            //Cria e mapeia o array de headers e clica nos botões
+            //Cria e mapeia o array de cards e clica nos botões
             console.log("Mapeou os cards!!!")
-        
-            const cards_header = await scraping.page.evaluate(() => {
-                const headers = []
 
-                document.querySelectorAll('h5[class="card-title"]')
-                    .forEach(header => headers.push(header.getAttribute('h5')));
-                    for(header of headers){
-                        this.handle_button_scraping()
-                    }
- 
-                return (
-                    console.log(headers) 
-                )
-            })
+            await scraping.page.waitForSelector('div[class="card"]')
+            const cards = await scraping.page.$$('div[class="card"]')
 
-            return cards_header
+            for(const card of cards){
+                console.log("Entrou na iteração!!!")
+                const button = await card.$('a.btn.btn-outline-secondary.float-right.d-flex.justify-content-between.align-items-center');
+                button.click();
+
+                this.handle_button_scraping
+            }
+
 
         }catch(err){
             console.log("Erro no scraping:", err);
         }
+    },
+
+    //Salva no banco de dados mongodb
+    save_db: async () => {
+        try{
+
+        }catch(err){
+            console.log("Erro ao salvar no DB:", err)
+        }
     }
-
-    
-
-    //Manipulação do DOM e scraping
 
 }
 
