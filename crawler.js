@@ -1,6 +1,8 @@
 const puppeteer = require('puppeteer'); 
-const jsdom = require("jsdom");
-const { document } = jsdom;
+const cheerio = require('cheerio');
+const request = require('request-promise');
+const mongoose = require('mongoose');
+const ScrapingSchema = require('./ScrapingSchema');
 
 const baseURL = "http://www.legislador.com.br/LegisladorWEB.ASP?WCI=ProjetoTramite&ID=";
 
@@ -41,71 +43,43 @@ const scraping = {
         //Seleciona e clica no botão
         try{
 
-            console.log("Entrou no scraping!!!")
+            const data = await scraping.page.evaluate(() => {
 
-            const titles = []
-            const dates = []
-            const situacoes = []
-            const assuntos = []
-            const autores = []
-            const ementas = []
+                console.log("Entrou no scraping!!!");
+                let titulo = document.querySelectorAll('div.card-header').innerText
+                let data = document.querySelectorAll('h6.card-subtitle').innerText;
+                let situacao = document.querySelectorAll('dd.col-sm-9').innerText;
+                let assunto = document.querySelectorAll('dd.col-sm-9').innerText;
+                let autor = document.querySelectorAll('dd.col-sm-9').innerText;
+                let ementa = document.querySelectorAll('p.card-text').innerText;
 
-            const scraping_data = await scraping.page.evaluate(() => {
-                console.log("Scraping de dados!!!")
-                //const title = await scraping.$eval('h5[class="card-title"]');
+                //Tramites
+                const projetos_tramites = {}
+                document.querySelectorAll('div#idTramite.mt-2')
+                    .forEach(projeto_tramite => {
+                        projetos_tramites.projeto = projeto_tramite.getElementsByTagName('dt').innerText;
+                        projetos_tramites.entrada = projeto_tramite.getElementsByClassName('info-col')[0].innerText;
+                        projetos_tramites.prazo = projeto_tramite.getElementsByClassName('info-col')[1].innerText;
+                        projetos_tramites.devolucao = projeto_tramite.getElementsByClassName('info-col')[2].innerText;
+                    })
 
-                document.querySelectorAll('h5[class="card-title"]')
-                    .forEach(title => titles.push(title.getAttribute('h5')));
-                
-                document.querySelectorAll('h6[class="card-subtitle mb-2 text-muted"]')
-                    .forEach(date => dates.push(date.getAttribute('h6')));
 
-                document.querySelectorAll('body > section > div > div:nth-child(2) > div > div.col-lg > dl > dd:nth-child(2)')
-                    .forEach(situacao => situacoes.push(situacao.getAttribute('dd')));
-
-                document.querySelectorAll('body > section > div > div:nth-child(2) > div > div.col-lg > dl > dd:nth-child(8)')
-                    .forEach(assunto => assuntos.push(assunto.getAttribute('dd')));
-
-                document.querySelectorAll('body > section > div > div:nth-child(2) > div > div.col-lg > dl > dd:nth-child(10)')
-                    .forEach(autor => autores.push(autor.getAttribute('dd')));
-
-                document.querySelectorAll('body > section > div > div:nth-child(2) > div > div.col-lg > dl > dd:nthbody > section > div > div:nth-child(5) > p-child(2)')
-                    .forEach(ementa => ementas.push(ementa.getAttribute('dd')));
-
-                //Captura os tramites dentro de um modal expandido pelo botão "Trâmite"
-                scraping.page.click('span.btn.btn-outline-secondary.btn-block.d-flex.justify-content-between.align-items-start');
-
-                //Scraping da sessão Trâmites
-                const entradas_tramites = []
-                const prazos_tramites = []
-                const devolucoes_tramites = []
-
-                document.querySelectorAll('.table > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(2)')
-                    .forEach(entrada_tramite => entradas_tramites.push(entrada_tramite.getAttribute('td')));
-                
-                document.querySelectorAll('.table > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(3)')
-                    .forEach(prazo_tramite => prazos_tramites.push(prazo_tramite.getAttribute('td')));
-
-                document.querySelectorAll('.table > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(4)')
-                    .forEach(devolucao_tramite => devolucoes_tramites.push(devolucao_tramite.getAttribute('td')));
-
-                return (
-                    console.log(titles),
-                    console.log(dates),
-                    console.log(situacoes),
-                    console.log(assuntos),
-                    console.log(autores),
-                    console.log(ementas),
-                    console.log(entradas_tramites),
-                    console.log(prazos_tramites),
-                    console.log(devolucoes_tramites)
-                )
+                return {
+                    titulo,
+                    data,
+                    situacao,
+                    assunto,
+                    autor,
+                    ementa,
+                    projetos_tramites
+                }
             })
 
-            return scraping_data
+            console.log(data)
+
         
         }catch(err){
-            console.log("Erro no botão:", err);
+            console.log("Erro no scraping:", err);
         }
     },
 
@@ -117,27 +91,70 @@ const scraping = {
             await scraping.page.waitForSelector('div[class="card"]')
             const cards = await scraping.page.$$('div[class="card"]')
 
+            await scraping.page.waitForSelector('div[class="card-body"]')
+            const tramites = await scraping.page.$$('div[class="card-body"]')
+
+
             for(const card of cards){
                 console.log("Entrou na iteração!!!")
                 const button = await card.$('a.btn.btn-outline-secondary.float-right.d-flex.justify-content-between.align-items-center');
-                button.click();
+                button.click('a.btn.btn-outline-secondary.float-right.d-flex.justify-content-between.align-items-center');
 
-                this.handle_button_scraping
+                for(const tramite of tramites){
+                    console.log("Abriu os tramites!!!")
+                    const btn_tramites = await tramite.$('span.btn.btn-outline-secondary.btn-block.btn-block.d-flex.justify-content-between.align-items-start');
+                    btn_tramites.click('span.btn.btn-outline-secondary.btn-block.btn-block.d-flex.justify-content-between.align-items-start');
+
+                    //scraping.handle_button_scraping();
+                }
+                
             }
 
 
         }catch(err){
-            console.log("Erro no scraping:", err);
+            console.log("Erro na iteração:", err);
         }
     },
 
     //Salva no banco de dados mongodb
     save_db: async () => {
-        try{
+        const objdados = await scraping.handle_button_scraping();
+        mongoose.connect('', {
+            useNewUrlParser: true
+        }).then(result => {
+            console.log("MongoDB conectado.")
+        }).catch(error => {
+            console.log("Houve um problema com a coneção.", error)
+        })
 
-        }catch(err){
-            console.log("Erro ao salvar no DB:", err)
+        const tbdados = await mongoose.model('tbdados', ScrapingSchema);
+        const consulta = await tbdados.find({dados:objdados.titulo});
+
+        function estavazio(){
+            for(prop in obj){
+                if(obj.hasOwnProperty(prop))
+                return false
+            }
+            return true
         }
+        if(estavazio(consulta)){
+            const resultado = new tbdados({
+                titulo:objdados.titulo,
+                situacao:objdados.situacao,
+                assunto:objdados.assunto,
+                autor:objdados.autor,
+                ementa:objdados.ementa,
+                projetos_tramites:objdados.projetos_tramites
+            });
+            resultado.save(function(error, resultado){
+                if(error)
+                return console.log(error)
+            });
+            console.log("Cadastro realizado com sucesso!")
+        }else{
+            console.log("Este concurso já existe.")
+        }
+
     }
 
 }
