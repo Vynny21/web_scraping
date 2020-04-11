@@ -113,6 +113,7 @@ async function scraping(links) {
 
                             console.log(dados);
                         
+                            //salva no mongodb
                             saveToDB(dados);
                         
                         }else if(scrapPage == undefined || null){
