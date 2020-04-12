@@ -2,16 +2,16 @@
 var mongoose = require('mongoose');
 
 var ScrapingSchema = new mongoose.Schema({
-    titulo: String,
-    data: Date,
-    ementa: String,
-    situacao: String,
-    assunto: String,
-    autor: String,
-    projeto: String,
-    entrada: Date,
-    prazo: Number,
-    devolucao: Date
+    titulo: {type: String},
+    data: {type: Date},
+    ementa: {type: String},
+    situacao: {type: String},
+    assunto: {type: String},
+    autor: {type: String},
+    projeto: {type: String},
+    entrada: {type: Date},
+    prazo: {type: Number},
+    devolucao: {type: Date}
 })
 
 module.exports = ScrapingSchema;

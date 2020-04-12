@@ -1,0 +1,37 @@
+{
+  "name": "WebScraping",
+  "version": "1.0.0",
+  "description": "Um rôbo para automatizar funções com captura de dados (scraping), pesquisas e etc.",
+  "main": "index.js",
+  "dependencies": {
+    "axios": "^0.19.2",
+    "cheerio": "^1.0.0-rc.3",
+    "dotenv": "^8.2.0",
+    "iconv-lite": "^0.5.1",
+    "jsdom": "^16.2.2",
+    "jsdom-global": "^3.0.2",
+    "json2csv": "^5.0.0",
+    "mongodb": "^3.5.5",
+    "mongoose": "^5.9.7",
+    "node-fetch": "^2.6.0",
+    "nodemon": "^2.0.3",
+    "puppeteer": "^2.1.1",
+    "request": "^2.88.2",
+    "request-promise": "^4.2.5"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vynny21/WebScraping.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Vynny21/WebScraping/issues"
+  },
+  "homepage": "https://github.com/Vynny21/WebScraping#readme"
+}

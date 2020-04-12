@@ -1,16 +1,18 @@
 const cheerio = require('cheerio');
 const request = require('request-promise');
 const fetch = require('node-fetch');
-var iconv = require('iconv-lite');
 const mongoose = require('mongoose');
+const iconv = require('iconv-lite');
+const fs = require('fs');
+const { Parser } = require('json2csv');
 const ScrapingSchema = require('./src/ScrapingSchema');
 
 
 const baseURL = 'http://www.legislador.com.br/LegisladorWEB.ASP?WCI=ProjetoTramite&ID=20';
 
 const search = '&dsVerbete=transporte';
-var encoding = 'iso-8859-1';
 
+var encoding = 'utf8';
 async function search_crawler_url(searchTerm) {
     return fetch(`${baseURL}${searchTerm}`)
         .then(res => res.text())
@@ -18,7 +20,7 @@ async function search_crawler_url(searchTerm) {
 
 search_crawler_url(search)
     .then(body => {
-        const $ = cheerio.load(body, encoding);
+        const $ = cheerio.load(body);
         const links = $('div.card-body').map((i, card) => {
             const $button = $(card).find('.btn.btn-outline-secondary.float-right.d-flex.justify-content-between.align-items-center').attr('onclick');
 
@@ -42,7 +44,7 @@ search_crawler_url(search)
 
                         var threePartURL = '&aaProjeto=';
                         var mainLink = threePartURL + link;
-                        var threePartNumberLink = mainLink.substring(0, 32);
+                        var threePartNumberLink = mainLink.substring(0, 33);
                         var threePartFormatted = threePartNumberLink.split(',')[2] + threePartURL;
 
                         var yearAndFetchPartURL = '&dsVerbete=';
@@ -52,14 +54,13 @@ search_crawler_url(search)
 
                         var fetchPartURL = '';
                         var mainLink = fetchPartURL + link;
-                        var fetchPartLink = mainLink.substring(0, 39);
+                        var fetchPartLink = mainLink.substring(0, 40);
                         var firstFormatted = fetchPartLink.split(',')[4] + fetchPartURL;
                         var secondFormatted = firstFormatted.split(')') + fetchPartURL;
-                        var thirdFormatted = secondFormatted.split(',')[0] + fetchPartURL;
-                        var fourth = thirdFormatted.replace(/'transporte'/s, 'transporte') + fetchPartURL;
-                        var fetchPartFormatted = fourth;
+                        var thirdFormatted = secondFormatted.split("'")[1];
+                        var fourthFormatted = thirdFormatted.replace(/'transporte'/s, 'transporte');
 
-                        return formattedLink = formattedURL + onePartFormatted + twoPartFormatted + threePartFormatted + yearPartFormatted + fetchPartFormatted;
+                        return formattedLink = formattedURL + onePartFormatted + twoPartFormatted + threePartFormatted + yearPartFormatted + fourthFormatted;
                     }
                 }
             } catch (err) {
@@ -81,13 +82,17 @@ async function scraping(links) {
                 try {
 
                     const scrapPage = await request(link);
-                    const $ = cheerio.load(scrapPage, encoding);
+                    const $ = cheerio.load(scrapPage, {decodeEntities:false});
 
                     if (scrapPage) {
                         if (scrapPage !== undefined || null) {
-                            console.log('Extraindo dados da pagina...')
+                            console.log('Extraindo dados da pagina...');
+
+                            
+                            let subOrdinaria = '';
                             let titulo = $('h5.card-title').text().trim();
-                            let data = $('h6.card-subtitle.mb-2.text-muted').text().trim();
+                            let getData = $('h6.card-subtitle.mb-2.text-muted').text().trim();
+                            let data = getData.substring(3, 13);
                             let ementa = $('div.card-body:nth-child(5) > p:nth-child(1)').text().trim();
                             let situacao = $('body > section > div > div:nth-child(2) > div > div.col-lg > dl > dd:nth-child(2)').text().trim();
                             let assunto = $('body > section > div > div:nth-child(2) > div > div.col-lg > dl > dd:nth-child(8)').text().trim();
@@ -96,6 +101,8 @@ async function scraping(links) {
                             let entrada = $('#idTramite > table > tbody > tr:nth-child(1) > td:nth-child(2)').text().trim();
                             let prazo = $('#idTramite > table > tbody > tr:nth-child(1) > td:nth-child(3)').text().trim();
                             let devolucao = $('#idTramite > table > tbody > tr:nth-child(1) > td:nth-child(4)').text().trim();
+                            
+                            //Substituiçao de palavras acentuadas
 
                             dados = {
                                 titulo,
@@ -109,10 +116,19 @@ async function scraping(links) {
                                 entrada,
                                 prazo,
                                 devolucao
+                            };
+
+                            try{
+                                const json2csvParser = new Parser();
+                                const csv = json2csvParser.parse(dados);
+                                console.log(dados);
+                                fs.writeFileSync('./scraping_portal.csv', csv, 'utf8');
+                                console.log('Arquivo CSV criado com sucesso!!!')          
+                                
+                            }catch(err){
+                                console.log("Erro na criação do csv:", err)
                             }
 
-                            console.log(dados);
-                        
                             //salva no mongodb
                             saveToDB(dados);
                         
@@ -131,12 +147,12 @@ async function scraping(links) {
 
 
 async function saveToDB(dados) {
-    const objdados = await dados;
-    mongoose.connect('mongodb//black_mirror:S0TC23S2jb0r0mTW@cluster0-5pniq.mongodb.net/test', {
+    const objdados = await scraping();
+    mongoose.connect('mongodb+srv://black_mirror:S0TC23S2jb0r0mTW@cluster0-5pniq.mongodb.net/test', {
         useNewUrlParser: true,
-        useUnifiedTopology: true
+        useUnifiedTopology: true,
     }).then(result => {
-        console.log("MongoDB conectado.")
+        console.log("MongoDB conectado!!!", result)
     }).catch(error => {
         console.log("Houve um problema com a conexão!", error)
     })
@@ -144,7 +160,7 @@ async function saveToDB(dados) {
     const tbdados = await mongoose.model('tbdados', ScrapingSchema);
     const consulta = await tbdados.find({dados:objdados.titulo});
 
-    function estavazio() {
+    function estavazio(obj) {
         for (prop in obj) {
             if (obj.hasOwnProperty(prop))
                 return false
@@ -166,7 +182,7 @@ async function saveToDB(dados) {
         });
         resultado.save(function (error, resultado) {
             if (error)
-                return console.log(error)
+                return console.log("Erro no cadastro dos dados:", error)
         });
         console.log("Cadastro realizado com sucesso!")
     } else {
