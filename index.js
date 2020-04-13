@@ -1,95 +1,88 @@
 const cheerio = require('cheerio');
+var http = require('http');
 const request = require('request-promise');
-const fetch = require('node-fetch');
 const mongoose = require('mongoose');
 const iconv = require('iconv-lite');
 const fs = require('fs');
 const { Parser } = require('json2csv');
-const ScrapingSchema = require('./src/ScrapingSchema');
+const ScrapingSchema = require('./DB');
 
 
-const baseURL = 'http://www.legislador.com.br/LegisladorWEB.ASP?WCI=ProjetoTramite&ID=20';
+async function initialize_links() {
 
-const search = '&dsVerbete=transporte';
+    const baseURL = 'http://www.legislador.com.br/LegisladorWEB.ASP?WCI=ProjetoTramite&ID=20';
+    const search = '&dsVerbete=transporte';
 
-var encoding = 'utf8';
-async function search_crawler_url(searchTerm) {
-    return fetch(`${baseURL}${searchTerm}`)
-        .then(res => res.text())
+    urlformat = baseURL + search;
+
+    const html = await request(urlformat);
+    const $ = cheerio.load(html);
+    const links = $('div.card-body').map((i, card) => {
+        const $button = $(card).find('.btn.btn-outline-secondary.float-right.d-flex.justify-content-between.align-items-center').attr('onclick');
+
+        try {
+            console.log('Links capturados! Formatando links...')
+            if ($button) {
+                if ($button !== undefined || null) {
+                    var link = $button;
+                    var formattedURL = baseURL.substring(0, 51);
+                    const mainPart = 'ProjetoTexto&ID='
+
+                    var onePartURL = '&inEspecie=';
+                    var mainLink = onePartURL + link;
+                    var onePartNumberLink = mainLink.substring(0, 27);
+                    var onePartFormatted = mainPart + onePartNumberLink.split('(')[1] + onePartURL;
+
+                    var twoPartURL = '&nrProjeto=';
+                    var mainLink = twoPartURL + link;
+                    var twoPartNumberLink = mainLink.substring(0, 32);
+                    var twoPartFormatted = twoPartNumberLink.split(',')[1] + twoPartURL;
+
+                    var threePartURL = '&aaProjeto=';
+                    var mainLink = threePartURL + link;
+                    var threePartNumberLink = mainLink.substring(0, 33);
+                    var threePartFormatted = threePartNumberLink.split(',')[2] + threePartURL;
+
+                    var yearAndFetchPartURL = '&dsVerbete=';
+                    var mainLink = yearAndFetchPartURL + link;
+                    var yearPartLink = mainLink.substring(0, 38);
+                    var yearPartFormatted = yearPartLink.split(',')[3] + yearAndFetchPartURL;
+
+                    var fetchPartURL = '';
+                    var mainLink = fetchPartURL + link;
+                    var fetchPartLink = mainLink.substring(0, 40);
+                    var firstFormatted = fetchPartLink.split(',')[4] + fetchPartURL;
+                    var secondFormatted = firstFormatted.split(')') + fetchPartURL;
+                    var thirdFormatted = secondFormatted.split("'")[1];
+                    var fourthFormatted = thirdFormatted.replace(/'transporte'/s, 'transporte');
+
+                    return formattedLink = formattedURL + onePartFormatted + twoPartFormatted + threePartFormatted + yearPartFormatted + fourthFormatted;
+                }
+            }
+        } catch (err) {
+            console.log('Erro na captura dos links!!!')
+        }
+
+    }).get();
+
+    console.log(links);
+    scraping(links);
 }
 
-search_crawler_url(search)
-    .then(body => {
-        const $ = cheerio.load(body);
-        const links = $('div.card-body').map((i, card) => {
-            const $button = $(card).find('.btn.btn-outline-secondary.float-right.d-flex.justify-content-between.align-items-center').attr('onclick');
 
-            try {
-                console.log('Links capturados! Formatando links...')
-                if ($button) {
-                    if ($button !== undefined || null) {
-                        var link = $button;
-                        var formattedURL = baseURL.substring(0, 51);
-                        const mainPart = 'ProjetoTexto&ID='
-
-                        var onePartURL = '&inEspecie=';
-                        var mainLink = onePartURL + link;
-                        var onePartNumberLink = mainLink.substring(0, 27);
-                        var onePartFormatted = mainPart + onePartNumberLink.split('(')[1] + onePartURL;
-
-                        var twoPartURL = '&nrProjeto=';
-                        var mainLink = twoPartURL + link;
-                        var twoPartNumberLink = mainLink.substring(0, 32);
-                        var twoPartFormatted = twoPartNumberLink.split(',')[1] + twoPartURL;
-
-                        var threePartURL = '&aaProjeto=';
-                        var mainLink = threePartURL + link;
-                        var threePartNumberLink = mainLink.substring(0, 33);
-                        var threePartFormatted = threePartNumberLink.split(',')[2] + threePartURL;
-
-                        var yearAndFetchPartURL = '&dsVerbete=';
-                        var mainLink = yearAndFetchPartURL + link;
-                        var yearPartLink = mainLink.substring(0, 38);
-                        var yearPartFormatted = yearPartLink.split(',')[3] + yearAndFetchPartURL;
-
-                        var fetchPartURL = '';
-                        var mainLink = fetchPartURL + link;
-                        var fetchPartLink = mainLink.substring(0, 40);
-                        var firstFormatted = fetchPartLink.split(',')[4] + fetchPartURL;
-                        var secondFormatted = firstFormatted.split(')') + fetchPartURL;
-                        var thirdFormatted = secondFormatted.split("'")[1];
-                        var fourthFormatted = thirdFormatted.replace(/'transporte'/s, 'transporte');
-
-                        return formattedLink = formattedURL + onePartFormatted + twoPartFormatted + threePartFormatted + yearPartFormatted + fourthFormatted;
-                    }
-                }
-            } catch (err) {
-                console.log('Erro na captura dos links!!!')
-            }
-
-        }).get();
-
-        scraping(links);
-
-        console.log(links)
-    });
-
-
-async function scraping(links) {
+async function scraping(links, res) {
     if (links) {
         if (links !== undefined || null) {
             await Promise.all(links.map(async (link) => {
                 try {
-
                     const scrapPage = await request(link);
-                    const $ = cheerio.load(scrapPage, {decodeEntities:false});
+                    const $ = cheerio.load(scrapPage, { decodeEntities: false });
 
                     if (scrapPage) {
                         if (scrapPage !== undefined || null) {
                             console.log('Extraindo dados da pagina...');
 
-                            
-                            let subOrdinaria = '';
+
                             let titulo = $('h5.card-title').text().trim();
                             let getData = $('h6.card-subtitle.mb-2.text-muted').text().trim();
                             let data = getData.substring(3, 13);
@@ -101,7 +94,7 @@ async function scraping(links) {
                             let entrada = $('#idTramite > table > tbody > tr:nth-child(1) > td:nth-child(2)').text().trim();
                             let prazo = $('#idTramite > table > tbody > tr:nth-child(1) > td:nth-child(3)').text().trim();
                             let devolucao = $('#idTramite > table > tbody > tr:nth-child(1) > td:nth-child(4)').text().trim();
-                            
+
                             //Substituiçao de palavras acentuadas
 
                             dados = {
@@ -118,21 +111,21 @@ async function scraping(links) {
                                 devolucao
                             };
 
-                            try{
+                            try {
                                 const json2csvParser = new Parser();
                                 const csv = json2csvParser.parse(dados);
                                 console.log(dados);
                                 fs.writeFileSync('./scraping_portal.csv', csv, 'utf8');
-                                console.log('Arquivo CSV criado com sucesso!!!')          
-                                
-                            }catch(err){
+                                console.log('Arquivo CSV criado com sucesso!!!')
+
+                            } catch (err) {
                                 console.log("Erro na criação do csv:", err)
                             }
 
                             //salva no mongodb
                             saveToDB(dados);
-                        
-                        }else if(scrapPage == undefined || null){
+
+                        } else if (scrapPage == undefined || null) {
                             return false
                         }
                     }
@@ -145,30 +138,21 @@ async function scraping(links) {
     }
 }
 
-
 async function saveToDB(dados) {
-    const objdados = await scraping();
+    const objdados = await dados;
     mongoose.connect('mongodb+srv://black_mirror:S0TC23S2jb0r0mTW@cluster0-5pniq.mongodb.net/test', {
         useNewUrlParser: true,
         useUnifiedTopology: true,
     }).then(result => {
-        console.log("MongoDB conectado!!!", result)
+        console.log("MongoDB conectado!!!")
     }).catch(error => {
         console.log("Houve um problema com a conexão!", error)
     })
 
-    const tbdados = await mongoose.model('tbdados', ScrapingSchema);
-    const consulta = await tbdados.find({dados:objdados.titulo});
+    const scrapingModel = mongoose.model('DadosScraping', ScrapingSchema);
 
-    function estavazio(obj) {
-        for (prop in obj) {
-            if (obj.hasOwnProperty(prop))
-                return false
-        }
-        return true
-    }
-    if (estavazio(consulta)) {
-        const resultado = new tbdados({
+    if (scrapingModel) {
+        const resultado = new scrapingModel({
             titulo: objdados.titulo,
             data: objdados.ementa,
             ementa: objdados.ementa,
@@ -180,7 +164,7 @@ async function saveToDB(dados) {
             prazo: objdados.prazo,
             devolucao: objdados.devolucao
         });
-        resultado.save(function (error, resultado) {
+        resultado.save((error, resultado) => {
             if (error)
                 return console.log("Erro no cadastro dos dados:", error)
         });
@@ -189,3 +173,5 @@ async function saveToDB(dados) {
         console.log("Este concurso já existe.")
     }
 }
+
+initialize_links();

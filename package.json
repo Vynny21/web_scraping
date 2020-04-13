@@ -5,9 +5,11 @@
   "main": "index.js",
   "dependencies": {
     "axios": "^0.19.2",
+    "charset": "^1.0.1",
     "cheerio": "^1.0.0-rc.3",
     "dotenv": "^8.2.0",
     "iconv-lite": "^0.5.1",
+    "jschardet": "^2.1.1",
     "jsdom": "^16.2.2",
     "jsdom-global": "^3.0.2",
     "json2csv": "^5.0.0",
