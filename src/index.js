@@ -7,6 +7,8 @@ const fs = require('fs');
 const { Parser } = require('json2csv');
 const ScrapingSchema = require('./DB');
 
+const { StringDecoder } = require('string_decoder');
+const decoder = new StringDecoder('utf8');
 
 async function initialize_links() {
 
@@ -140,9 +142,9 @@ async function scraping(links, res) {
 
 async function saveToDB(dados) {
     const objdados = await dados;
-    mongoose.connect('mongodb+srv://black_mirror:S0TC23S2jb0r0mTW@cluster0-5pniq.mongodb.net/test', {
+    mongoose.connect("mongodb+srv://black_mirror:S0TC23S2jb0r0mTW@cluster0-5pniq.mongodb.net/test", {
         useNewUrlParser: true,
-        useUnifiedTopology: true,
+        useUnifiedTopology: true
     }).then(result => {
         console.log("MongoDB conectado!!!")
     }).catch(error => {
@@ -150,8 +152,16 @@ async function saveToDB(dados) {
     })
 
     const scrapingModel = mongoose.model('DadosScraping', ScrapingSchema);
+    const consulta = scrapingModel.find({dados:objdados.titulo});
 
-    if (scrapingModel) {
+    function estavazio(obj) {
+        for (prop in obj) {
+            if (obj.hasOwnProperty(prop))
+                return false
+        }
+        return true
+    }
+    if (estavazio(consulta)) {
         const resultado = new scrapingModel({
             titulo: objdados.titulo,
             data: objdados.ementa,
@@ -164,11 +174,14 @@ async function saveToDB(dados) {
             prazo: objdados.prazo,
             devolucao: objdados.devolucao
         });
-        resultado.save((error, resultado) => {
-            if (error)
-                return console.log("Erro no cadastro dos dados:", error)
+        resultado.save((error, result) => {
+            if (!error){
+                console.log("Cadastro realizado com sucesso!", result);
+            }else{
+                return console.log("Erro no cadastro dos dados:", error);
+            }
         });
-        console.log("Cadastro realizado com sucesso!")
+
     } else {
         console.log("Este concurso já existe.")
     }
