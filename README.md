@@ -1,8 +1,10 @@
 # WEBSCRAPING
 Um rôbo para automatizar funções com captura de dados (scraping), pesquisas e etc.
 
-# LINGUAGEM E BIBLIOTECA
-Node.js and Puppeteer
+# LINGUAGEM E BIBLIOTECAS
+Node.js, Cheerio, Express, MongoDB, Jest e Docker
+
+DOCKER INATIVO
 
 # INSTALAÇÃO E ATIVAÇÃO
 npm install

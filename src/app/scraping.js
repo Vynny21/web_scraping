@@ -5,7 +5,7 @@ const fs = require('fs');
 const { Parser } = require('json2csv');
 
 //Conexão e gravação de dados no MongoDB
-const saveToDB = require('./database/saveToDB');
+const saveToDB = require('../database/saveToDB');
 
 const { StringDecoder } = require('string_decoder');
 const decoder = new StringDecoder('utf8');
@@ -117,7 +117,7 @@ async function scraping(links, res) {
                                 const json2csvParser = new Parser();
                                 const csv = json2csvParser.parse(dados);
                                 console.log(dados);
-                                fs.writeFileSync('./src/csv/scraping_portal.csv', csv, 'utf8');
+                                fs.writeFileSync('./src/app/csv/scraping_portal.csv', csv, 'utf8');
                                 console.log('Arquivo CSV criado com sucesso!!!')
 
                             } catch (err) {

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const ScrapingSchema = require('../models/ScrapingDB');
-const dados = require('../index');
+const dados = require('../app/scraping');
 
 async function saveToDB(dados) {
     const objdados = await dados;

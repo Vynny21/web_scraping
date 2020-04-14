@@ -12,6 +12,7 @@
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "iconv-lite": "^0.5.1",
+    "jest-cli": "^25.3.0",
     "jschardet": "^2.1.1",
     "jsdom": "^16.2.2",
     "jsdom-global": "^3.0.2",
@@ -24,9 +25,13 @@
     "request": "^2.88.2",
     "request-promise": "^4.2.5"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "jest": "^25.3.0"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "start": "node server.js",
+    "dev": "nodemon server.js --ignore __tests__"
   },
   "repository": {
     "type": "git",
