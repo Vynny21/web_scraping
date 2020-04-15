@@ -10,6 +10,7 @@ DOCKER INATIVO
 npm install
 node .\index.js
 
-
+# RODAR OS TESTES
+npm test
 
 

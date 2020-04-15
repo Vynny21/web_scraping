@@ -23,7 +23,6 @@ async function initialize_links() {
         const $button = $(card).find('.btn.btn-outline-secondary.float-right.d-flex.justify-content-between.align-items-center').attr('onclick');
 
         try {
-            console.log('Links capturados! Formatando links...')
             if ($button) {
                 if ($button !== undefined || null) {
                     var link = $button;
@@ -62,7 +61,7 @@ async function initialize_links() {
                 }
             }
         } catch (err) {
-            console.log('Erro na captura dos links!!!')
+            console.log(err);
         }
 
     }).get();
@@ -78,24 +77,34 @@ async function scraping(links, res) {
             await Promise.all(links.map(async (link) => {
                 try {
                     const scrapPage = await request(link);
-                    const $ = cheerio.load(scrapPage, { decodeEntities: false });
+                    const $ = cheerio.load(scrapPage);
 
                     if (scrapPage) {
                         if (scrapPage !== undefined || null) {
-                            console.log('Extraindo dados da pagina...');
 
+                            let getTitulo = $('h5.card-title').text().trim();
+                            let strTitulo = String(getTitulo);
+                            let titulo = decoder.write(strTitulo);
 
-                            let titulo = $('h5.card-title').text().trim();
                             let getData = $('h6.card-subtitle.mb-2.text-muted').text().trim();
-                            let data = getData.substring(3, 13);
-                            let ementa = $('div.card-body:nth-child(5) > p:nth-child(1)').text().trim();
-                            let situacao = $('body > section > div > div:nth-child(2) > div > div.col-lg > dl > dd:nth-child(2)').text().trim();
-                            let assunto = $('body > section > div > div:nth-child(2) > div > div.col-lg > dl > dd:nth-child(8)').text().trim();
-                            let autor = $('body > section > div > div:nth-child(2) > div > div.col-lg > dl > dd:nth-child(10)').text().trim();
-                            let projeto = $('#idTramite > table > tbody > tr:nth-child(1) > td:nth-child(1) > dl > dt').text().trim();
-                            let entrada = $('#idTramite > table > tbody > tr:nth-child(1) > td:nth-child(2)').text().trim();
-                            let prazo = $('#idTramite > table > tbody > tr:nth-child(1) > td:nth-child(3)').text().trim();
-                            let devolucao = $('#idTramite > table > tbody > tr:nth-child(1) > td:nth-child(4)').text().trim();
+                            let formatData = getData.substring(3, 13);
+                            let data = String(formatData);
+                            let getEmenta = $('div.card-body:nth-child(5) > p:nth-child(1)').text().trim();
+                            let ementa = String(getEmenta);
+                            let getSituacao = $('body > section > div > div:nth-child(2) > div > div.col-lg > dl > dd:nth-child(2)').text().trim();
+                            let situacao = String(getSituacao);
+                            let getAssunto = $('body > section > div > div:nth-child(2) > div > div.col-lg > dl > dd:nth-child(8)').text().trim();
+                            let assunto = String(getAssunto);
+                            let getAutor = $('body > section > div > div:nth-child(2) > div > div.col-lg > dl > dd:nth-child(10)').text().trim();
+                            let autor = String(getAutor);
+                            let getProjeto = $('#idTramite > table > tbody > tr:nth-child(1) > td:nth-child(1) > dl > dt').text().trim();
+                            let projeto = String(getProjeto);
+                            let getEntrada = $('#idTramite > table > tbody > tr:nth-child(1) > td:nth-child(2)').text().trim();
+                            let entrada = String(getEntrada);
+                            let getPrazo = $('#idTramite > table > tbody > tr:nth-child(1) > td:nth-child(3)').text().trim();
+                            let prazo = String(getPrazo);
+                            let getDevolucao = $('#idTramite > table > tbody > tr:nth-child(1) > td:nth-child(4)').text().trim();
+                            let devolucao = String(getDevolucao);
 
                             //Substituiçao de palavras acentuadas
 
@@ -108,7 +117,6 @@ async function scraping(links, res) {
                                 autor,
                                 projeto,
                                 entrada,
-                                entrada,
                                 prazo,
                                 devolucao
                             };
@@ -116,12 +124,11 @@ async function scraping(links, res) {
                             try {
                                 const json2csvParser = new Parser();
                                 const csv = json2csvParser.parse(dados);
-                                console.log(dados);
                                 fs.writeFileSync('./src/app/csv/scraping_portal.csv', csv, 'utf8');
-                                console.log('Arquivo CSV criado com sucesso!!!')
+                                console.log(dados);
 
                             } catch (err) {
-                                console.log("Erro na criação do csv:", err)
+                                console.log(err);
                             }
 
                             //salva no mongodb
@@ -133,7 +140,7 @@ async function scraping(links, res) {
                     }
 
                 } catch (err) {
-                    console.log('Erro no scraping da pagina:', err)
+                    console.log(err);
                 }
             }));
         }

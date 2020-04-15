@@ -8,9 +8,9 @@ async function saveToDB(dados) {
         useNewUrlParser: true,
         useUnifiedTopology: true
     }).then(result => {
-        console.log("MongoDB conectado!!!")
+        //console.log(result)
     }).catch(error => {
-        console.log("Houve um problema com a conexão!", error)
+        //console.log(error)
     })
 
     const scrapingModel = mongoose.model('DadosScraping', ScrapingSchema);
@@ -38,14 +38,14 @@ async function saveToDB(dados) {
         });
         resultado.save((error, result) => {
             if (!error) {
-                console.log("Cadastro realizado com sucesso!", result);
+                //console.log( result);
             } else {
-                return console.log("Erro no cadastro dos dados:", error);
+                //return console.log(error);
             }
         });
 
     } else {
-        console.log("Este scraping já existe.")
+        //console.log(getS)
     }
 }
 
