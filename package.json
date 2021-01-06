@@ -4,7 +4,7 @@
   "description": "Um rôbo para automatizar funções com captura de dados (scraping), pesquisas e etc.",
   "main": "index.js",
   "dependencies": {
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "body-parser": "^1.19.0",
     "charset": "^1.0.1",
     "cheerio": "^1.0.0-rc.3",
